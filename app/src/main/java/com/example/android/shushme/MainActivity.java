@@ -94,7 +94,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void refreshPlacesData() {
-        Cursor cursor = getContentResolver().query(PlaceContract.BASE_CONTENT_URI,
+        Cursor cursor = getContentResolver().query(PlaceContract.PlaceEntry.CONTENT_URI,
                 null, null, null, null);
         if (cursor == null || cursor.getCount() == 0) {
             return;
