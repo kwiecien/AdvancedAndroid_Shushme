@@ -1,28 +1,31 @@
 package com.example.android.shushme;
 
 /*
-* Copyright (C) 2017 The Android Open Source Project
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*  	http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright (C) 2017 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  	http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
+import android.app.NotificationManager;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -97,10 +100,12 @@ public class MainActivity extends AppCompatActivity implements
                 editor.putBoolean(getString(R.string.setting_enabled), isChecked);
                 mIsEnabled = isChecked;
                 editor.commit();
-                if (isChecked) mGeofencing.registerAllGeofences();
-                else mGeofencing.unRegisterAllGeofences();
+                if (isChecked) {
+                    mGeofencing.registerAllGeofences();
+                } else {
+                    mGeofencing.unRegisterAllGeofences();
+                }
             }
-
         });
 
         // Build up the LocationServices API client
@@ -158,8 +163,10 @@ public class MainActivity extends AppCompatActivity implements
                 null,
                 null);
 
-        if (data == null || data.getCount() == 0) return;
-        List<String> guids = new ArrayList<String>();
+        if (data == null || data.getCount() == 0) {
+            return;
+        }
+        List<String> guids = new ArrayList<>();
         while (data.moveToNext()) {
             guids.add(data.getString(data.getColumnIndex(PlaceContract.PlaceEntry.COLUMN_PLACE_ID)));
         }
@@ -170,7 +177,9 @@ public class MainActivity extends AppCompatActivity implements
             public void onResult(@NonNull PlaceBuffer places) {
                 mAdapter.swapPlaces(places);
                 mGeofencing.updateGeofencesList(places);
-                if (mIsEnabled) mGeofencing.registerAllGeofences();
+                if (mIsEnabled) {
+                    mGeofencing.registerAllGeofences();
+                }
             }
         });
     }
@@ -209,6 +218,7 @@ public class MainActivity extends AppCompatActivity implements
      * @param resultCode  The result code specified by the second activity
      * @param data        The Intent that carries the result data.
      */
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == PLACE_PICKER_REQUEST && resultCode == RESULT_OK) {
             Place place = PlacePicker.getPlace(this, data);
@@ -246,10 +256,20 @@ public class MainActivity extends AppCompatActivity implements
             locationPermissions.setEnabled(false);
         }
 
-        //TODO (3) Initialize ringer permissions checkbox
+        CheckBox ringerCheckbox = (CheckBox) findViewById(R.id.ringer_mode_permissions);
+        NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (Build.VERSION.SDK_INT >= 24 && !notificationManager.isNotificationPolicyAccessGranted()) {
+            ringerCheckbox.setChecked(false);
+        } else {
+            ringerCheckbox.setChecked(true);
+            ringerCheckbox.setEnabled(false);
+        }
     }
 
-    // TODO (2) Implement onRingerPermissionsClicked to launch ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
+    public void onRingerPermissionsClicked(View view) {
+        Intent intent = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
+        startActivity(intent);
+    }
 
     public void onLocationPermissionClicked(View view) {
         ActivityCompat.requestPermissions(MainActivity.this,
